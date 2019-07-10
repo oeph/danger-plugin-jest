@@ -1,6 +1,6 @@
 {
-  "name": "danger-plugin-jest",
-  "version": "0.0.0-development",
+  "name": "@oeph/danger-plugin-jest",
+  "version": "0.0.2",
   "description": "Danger plugin for Jest",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,19 +19,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/macklinu/danger-plugin-jest.git"
+    "url": "https://github.com/oeph/danger-plugin-jest.git"
   },
   "keywords": [
     "danger",
     "danger-plugin",
     "jest"
   ],
-  "author": "Macklin Underdown <macklinu@gmail.com>",
+  "author": "Philipp Oehme <me@philippoeh.me>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/macklinu/danger-plugin-jest/issues"
+    "url": "https://github.com/oeph/danger-plugin-jest/issues"
   },
-  "homepage": "https://github.com/macklinu/danger-plugin-jest#readme",
+  "homepage": "https://github.com/oeph/danger-plugin-jest#readme",
   "dependencies": {
     "strip-ansi": "^4.0.0"
   },
