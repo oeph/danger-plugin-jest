@@ -14,10 +14,14 @@ declare function fail(message?: string): void
 
 export interface IPluginConfig {
   testResultsJsonPath: string
+  relativePath: string
 }
 
 export default function jest(config: Partial<IPluginConfig> = {}) {
-  const { testResultsJsonPath = 'test-results.json' } = config
+  const {
+    testResultsJsonPath = 'test-results.json',
+    relativePath = '',
+  } = config
   try {
     const jsonFileContents = fs.readFileSync(testResultsJsonPath, 'utf8')
     const jsonResults: IJestTestResults = JSON.parse(jsonFileContents)
@@ -29,9 +33,9 @@ export default function jest(config: Partial<IPluginConfig> = {}) {
 
     const isModernFormatResults = jsonResults.testResults[0].testResults
     if (isModernFormatResults) {
-      presentErrorsForNewStyleResults(jsonResults)
+      presentErrorsForNewStyleResults(jsonResults, relativePath)
     } else {
-      presentErrorsForOldStyleResults(jsonResults as any)
+      presentErrorsForOldStyleResults(jsonResults as any, relativePath)
     }
   } catch (e) {
     // tslint:disable-next-line:no-console
@@ -42,11 +46,15 @@ export default function jest(config: Partial<IPluginConfig> = {}) {
   }
 }
 
-const presentErrorsForOldStyleResults = (jsonResults: IJestTestOldResults) => {
+const presentErrorsForOldStyleResults = (
+  jsonResults: IJestTestOldResults,
+  relativePath: string
+) => {
   const failing = jsonResults.testResults.filter(tr => tr.status === 'failed')
 
   failing.forEach(results => {
-    const relativeFilePath = path.relative(process.cwd(), results.name)
+    const relativeFilePath =
+      relativePath + path.relative(process.cwd(), results.name)
     const failedAssertions = results.assertionResults.filter(
       r => r.status === 'failed'
     )
@@ -58,11 +66,15 @@ const presentErrorsForOldStyleResults = (jsonResults: IJestTestOldResults) => {
   })
 }
 
-const presentErrorsForNewStyleResults = (jsonResults: IJestTestResults) => {
+const presentErrorsForNewStyleResults = (
+  jsonResults: IJestTestResults,
+  relativePath: string
+) => {
   const failing = jsonResults.testResults.filter(tr => tr.numFailingTests > 0)
 
   failing.forEach(results => {
-    const relativeFilePath = path.relative(process.cwd(), results.testFilePath)
+    const relativeFilePath =
+      relativePath + path.relative(process.cwd(), results.testFilePath)
     const failedAssertions = results.testResults.filter(
       r => r.status === 'failed'
     )
@@ -71,23 +83,57 @@ const presentErrorsForNewStyleResults = (jsonResults: IJestTestResults) => {
   })
 }
 
-// e.g. https://github.com/orta/danger-plugin-jest/blob/master/src/__tests__/fails.test.ts
 const linkToTest = (file: string, msg: string, title: string) => {
   const line = lineOfError(msg, file)
-  const githubRoot = danger.github.pr.head.repo.html_url.split(
-    danger.github.pr.head.repo.owner.login
-  )[0]
-  const repo = danger.github.pr.head.repo
-  const url = `${githubRoot}${repo.full_name}/blob/${
-    danger.github.pr.head.ref
-  }/${file}${line ? `#L${line}` : ''}`
-  return `<a href='${url}'>${title}</a>`
+
+  if (danger.github != null) {
+    // e.g. https://github.com/orta/danger-plugin-jest/blob/master/src/__tests__/fails.test.ts
+    const githubRoot = danger.github.pr.head.repo.html_url.split(
+      danger.github.pr.head.repo.owner.login
+    )[0]
+    const repo = danger.github.pr.head.repo
+    const url = `${githubRoot}${repo.full_name}/blob/${
+      danger.github.pr.head.ref
+    }/${file}${line ? `#L${line}` : ''}`
+    return `<a href='${url}'>${title}</a>`
+  }
+
+  if (danger.bitbucket_server != null) {
+    // http://bitbucket.ams.gmbh/projects/MDM/repos/madam2/browse/Frontend/app/src/__tests__/failingTest.js?at=refs%2Fheads%2Ffeature%2Fdanger_integration#2
+    const bitbucketServerRoot =
+      danger.bitbucket_server.pr.fromRef.repository.links['self'][0].href
+    const ref = danger.bitbucket_server.pr.fromRef.id
+    const url = `${bitbucketServerRoot}/${file.replace(
+      /\\/g,
+      '/'
+    )}?at=${encodeURI(ref)}#${line}`
+    return `[${title}](${url})`
+  }
+
+  return `${title} (Could not link to the specific test file.)`
 }
 
 const assertionFailString = (
   file: string,
   status: IInsideFileTestResults
-): string => `
+): string => {
+  if (danger.bitbucket_server != null) {
+    return `
+* ${linkToTest(
+      file,
+      status.failureMessages && status.failureMessages[0],
+      status.title
+    )}
+
+    ${sanitizeShortErrorMessage(
+      status.failureMessages && stripANSI(status.failureMessages[0])
+    )}
+
+    ${status.failureMessages && stripANSI(status.failureMessages.join('\n'))}
+
+`
+  } else {
+    return `
 <li>
 ${linkToTest(
   file,
@@ -106,18 +152,56 @@ ${status.failureMessages && stripANSI(status.failureMessages.join('\n'))}
 </code></pre>
 </details>
 </li>
-<br/>
+
 `
+  }
+}
 
 const fileToFailString = (
   // tslint:disable-next-line:no-shadowed-variable
   path: string,
   failedAssertions: IInsideFileTestResults[]
+): string => {
+  if (danger.github != null) {
+    return fileToFailStringGithub(path, failedAssertions)
+  }
+
+  if (danger.bitbucket_server != null) {
+    return fileToFailStringBitbucketServer(path, failedAssertions)
+  }
+
+  return ''
+}
+
+const fileToFailStringGithub = (
+  // tslint:disable-next-line:no-shadowed-variable
+  path: string,
+  failedAssertions: IInsideFileTestResults[]
 ): string => `
-<b>🃏 FAIL</b> in ${danger.github.utils.fileLinks([path])}
+<b>Jest FAIL</b> in ${danger.github.utils.fileLinks([path])}
+
 
 ${failedAssertions.map(a => assertionFailString(path, a)).join('\n\n')}
 `
+
+const fileToFailStringBitbucketServer = (
+  // tslint:disable-next-line:no-shadowed-variable
+  path: string,
+  failedAssertions: IInsideFileTestResults[]
+): string => {
+  const bitbucketServerRoot =
+    danger.bitbucket_server.pr.fromRef.repository.links['self'][0].href
+  const ref = danger.bitbucket_server.pr.fromRef.id
+  const url = `${bitbucketServerRoot}/${path.replace(
+    /\\/g,
+    '/'
+  )}?at=${encodeURI(ref)}`
+  return `
+**Jest FAIL** in [${path}](${url})
+
+${failedAssertions.map(a => assertionFailString(path, a)).join('\n\n')}
+`
+}
 
 const lineOfError = (msg: string, filePath: string): number | null => {
   const filename = path.basename(filePath)
