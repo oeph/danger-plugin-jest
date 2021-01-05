@@ -33,7 +33,7 @@
     "strip-ansi": "^4.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.15",
+    "@types/jest": "^24.0.25",
     "@types/node": "^8.0.37",
     "danger": "^10.6.0",
     "eslint": "^6.0.1",
