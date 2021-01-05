@@ -1,6 +1,6 @@
 {
   "name": "@oeph/danger-plugin-jest",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Danger plugin for Jest",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
