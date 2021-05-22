@@ -1,3 +1,3 @@
-import jest from './dist'
+import jest from './dist';
 
-jest({ showSuccessMessage: true })
+jest({ showSuccessMessage: true });

@@ -1,5 +1,3 @@
-Fork of https://github.com/macklinu/danger-plugin-jest
-
 # danger-plugin-jest
 
 > [Danger](https://github.com/danger/danger-js) plugin for Jest
@@ -51,3 +49,7 @@ Run the [Jest](https://facebook.github.io/jest/) test suite with `yarn test`.
 This project uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated NPM package publishing.
 
 :heart:
+
+## Notice
+
+THis is a fork of https://github.com/macklinu/danger-plugin-jest
