@@ -1,6 +1,6 @@
 {
   "name": "@oeph/danger-plugin-jest",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Danger plugin for Jest",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/oeph/danger-plugin-jest#readme",
   "dependencies": {
+    "bbs-code-insights": "^0.0.1",
     "strip-ansi": "^4.0.0"
   },
   "devDependencies": {
