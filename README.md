@@ -52,4 +52,4 @@ This project uses [semantic-release](https://github.com/semantic-release/semanti
 
 ## Notice
 
-THis is a fork of https://github.com/macklinu/danger-plugin-jest
+This is a fork of https://github.com/macklinu/danger-plugin-jest

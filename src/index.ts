@@ -77,7 +77,7 @@ const presentErrorsForNewStyleResults = (jsonResults: JestTestResults, relativeP
 const linkToTest = (file: string, msg: string, title: string) => {
     const line = lineOfError(msg, file);
 
-    if (danger.github !== null) {
+    if (danger.github != null) {
         // e.g. https://github.com/orta/danger-plugin-jest/blob/master/src/__tests__/fails.test.ts
         const githubRoot = danger.github.pr.head.repo.html_url.split(danger.github.pr.head.repo.owner.login)[0];
         const repo = danger.github.pr.head.repo;
@@ -93,6 +93,13 @@ const linkToTest = (file: string, msg: string, title: string) => {
         const ref = danger.bitbucket_server.pr.fromRef.id;
         const url = `${bitbucketServerRoot}/${file.replace(/\\/g, '/')}?at=${encodeURI(ref)}#${line}`;
         return `[${title}](${url})`;
+    }
+
+    if (danger.gitlab != null) {
+        const mergeRequestUrl = danger.gitlab.mr.web_url;
+        const baseUrl = mergeRequestUrl.substring(0, mergeRequestUrl.indexOf('/merge_requests'));
+        const url = `${baseUrl}/blob/${danger.gitlab.mr.sha}/${file.replace(/\\/g, '/')}${line ? `#L${line}` : ''}`;
+        return `[${title}${line ? `(Line: ${line})` : ''}](${url})`;
     }
 
     return `${title} (Could not link to the specific test file.)`;
@@ -140,6 +147,10 @@ const fileToFailString = (
         return fileToFailStringBitbucketServer(path, failedAssertions);
     }
 
+    if (danger.gitlab != null) {
+        return fileToFailStringGitlab(path, failedAssertions);
+    }
+
     return '';
 };
 
@@ -162,6 +173,21 @@ const fileToFailStringBitbucketServer = (
     const bitbucketServerRoot = danger.bitbucket_server.pr.fromRef.repository.links['self'][0].href;
     const ref = danger.bitbucket_server.pr.fromRef.id;
     const url = `${bitbucketServerRoot}/${path.replace(/\\/g, '/')}?at=${encodeURI(ref)}`;
+    return `
+**Jest FAIL** in [${path}](${url})
+
+${failedAssertions.map((a) => assertionFailString(path, a)).join('\n\n')}
+`;
+};
+
+const fileToFailStringGitlab = (
+    // tslint:disable-next-line:no-shadowed-variable
+    path: string,
+    failedAssertions: InsideFileTestResults[]
+): string => {
+    const mergeRequestUrl = danger.gitlab.mr.web_url;
+    const baseUrl = mergeRequestUrl.substring(0, mergeRequestUrl.indexOf('/merge_requests'));
+    const url = `${baseUrl}/blob/${danger.gitlab.mr.sha}/${path.replace(/\\/g, '/')}`;
     return `
 **Jest FAIL** in [${path}](${url})
 
