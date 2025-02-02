@@ -99,7 +99,7 @@ const linkToTest = (file: string, msg: string, title: string) => {
         const mergeRequestUrl = danger.gitlab.mr.web_url;
         const baseUrl = mergeRequestUrl.substring(0, mergeRequestUrl.indexOf('/merge_requests'));
         const url = `${baseUrl}/blob/${danger.gitlab.mr.sha}/${file.replace(/\\/g, '/')}${line ? `#L${line}` : ''}`;
-        return `[${title}${line ? `(Line: ${line})` : ''}](${url})`;
+        return `[${title}${line ? ` (Line: ${line})` : ''}](${url})`;
     }
 
     return `${title} (Could not link to the specific test file.)`;
